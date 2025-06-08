@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CheckMaster - Gestionnaire de Checklists</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+            width: 100%;
+            position: relative;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            transition: padding 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 15px 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background 0.3s;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .language-selector {
+            display: flex;
+            gap: 5px;
+            flex-wrap: nowrap;
+            margin-top: 20px;
+            padding: 0 20px;
+        }
+
+        .lang-btn {
+            background: rgba(102, 126, 234, 0.2);
+            border: none;
+            color: #333;
+            padding: 8px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+            min-width: 35px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .lang-btn:hover, .lang-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 300px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            transition: left 0.3s ease;
+            z-index: 1000;
+            box-shadow: 2px 0 20px rgba(0,0,0,0.1);
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            float: right;
+        }
+
+        .theme-list {
+            padding: 20px;
+        }
+
+        .theme-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .theme-item:hover, .theme-item.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(10px);
+        }
+
+        .theme-icon {
+            font-size: 24px;
+            margin-right: 15px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 300px;
+            gap: 30px;
+            margin: 30px 0;
+            transition: all 0.3s ease;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        .search-section, .checklist-section {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+            outline: none;
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+
+        .suggestion-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .suggestion-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .suggestion-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .checklist {
+            min-height: 400px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+            transform: translateX(0);
+            cursor: grab;
+        }
+
+        .checklist-item.dragging {
+            transform: translateX(-100px);
+            opacity: 0.7;
+        }
+
+        .checklist-item input[type="checkbox"] {
+            margin-right: 15px;
+            transform: scale(1.5);
+            cursor: pointer;
+        }
+
+        .checklist-item.completed {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        .delete-btn {
+            margin-left: auto;
+            background: #ff4757;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .delete-btn:hover {
+            background: #ff3742;
+            transform: scale(1.1);
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        @media (max-width: 1400px) {
+            .container {
+                max-width: 1200px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                max-width: 992px;
+            }
+            
+            .main-content {
+                gap: 25px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .container {
+                max-width: 768px;
+            }
+
+            .main-content {
+                gap: 20px;
+            }
+
+            .checklist-section {
+                padding: 25px;
+            }
+
+            .sidebar {
+                gap: 15px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                max-width: 100%;
+                padding: 0 15px;
+                overflow-x: hidden;
+            }
+
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                margin: 15px 0;
+                width: 100%;
+                overflow-x: hidden;
+            }
+
+            .header {
+                padding: 10px 15px;
+                margin: 10px 0;
+                width: calc(100% - 30px);
+            }
+
+            .search-section, .checklist-section {
+                width: 100%;
+                padding: 15px;
+                margin: 0;
+                border-radius: 15px;
+                overflow-x: hidden;
+            }
+
+            .suggestions-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 10px;
+                width: 100%;
+            }
+
+            .suggestion-card {
+                width: 100%;
+                margin: 0;
+            }
+
+            .checklist-item {
+                width: 100%;
+                margin: 8px 0;
+                padding: 12px;
+            }
+
+            .add-custom-container {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .add-custom-input, .add-custom-btn {
+                width: 100%;
+            }
+
+            .search-container {
+                width: 100%;
+            }
+
+            .search-input {
+                width: 100%;
+            }
+
+            .search-suggestions {
+                width: 100%;
+                left: 0;
+                right: 0;
+            }
+
+            .sidebar {
+                order: -1;
+            }
+
+            .mobile-ad {
+                display: block;
+                background: linear-gradient(45deg, #ffd89b, #19547b);
+                border-radius: 10px;
+                padding: 12px;
+                text-align: center;
+                color: white;
+                margin: 15px 0;
+                cursor: pointer;
+                font-size: 14px;
+            }
+
+            .desktop-ad {
+                display: none;
+            }
+
+            .checklist-item {
+                padding: 12px;
+                margin: 8px 0;
+                font-size: 14px;
+            }
+
+            .add-item-container {
+                gap: 8px;
+                margin-top: 15px;
+            }
+
+            .add-item-input {
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+
+            .add-btn {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+
+            .menu-overlay {
+                width: 85%;
+                right: -85%;
+                padding: 70px 20px 20px;
+            }
+
+            .menu-theme {
+                padding: 12px 15px;
+                font-size: 14px;
+                margin: 8px 0;
+            }
+
+            .swipe-hint {
+                font-size: 11px;
+                margin-top: 8px;
+            }
+
+            .ai-badge {
+                bottom: 15px;
+                right: 15px;
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+
+            .theme-suggestions {
+                padding: 15px;
+            }
+
+            .suggestion-card {
+                padding: 8px 12px;
+                font-size: 13px;
+                margin: 6px 0;
+            }
+
+            .search-suggestions {
+                max-height: 250px;
+            }
+
+            .suggestion-item {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .container {
+                padding: 0 10px;
+            }
+
+            .header {
+                padding: 8px 10px;
+                margin: 8px 0;
+                width: calc(100% - 20px);
+            }
+ 
+            .search-section, .checklist-section {
+                padding: 12px;
+            }
+
+            .checklist-item {
+                padding: 10px;
+            }
+
+            .language-selector {
+                gap: 3px;
+            }
+
+            .lang-btn {
+                padding: 6px 8px;
+                font-size: 12px;
+                min-width: 32px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .container {
+                padding: 0 8px;
+            }
+
+            .header {
+                padding: 6px 8px;
+                margin: 6px 0;
+                width: calc(100% - 16px);
+            }
+
+            .logo {
+                font-size: 16px;
+            }
+
+            .checklist-item {
+                padding: 8px;
+                font-size: 13px;
+            }
+
+            .add-custom-input, .add-custom-btn {
+                font-size: 13px;
+                padding: 8px 10px;
+            }
+
+            .menu-theme {
+                font-size: 13px;
+                padding: 10px 12px;
+            }
+
+            .language-selector {
+                gap: 2px;
+            }
+
+            .lang-btn {
+                padding: 5px 6px;
+                font-size: 11px;
+                min-width: 28px;
+            }
+        }
+
+        @media (min-width: 1400px) {
+            .container {
+                padding: 0 30px;
+            }
+
+            .main-content {
+                gap: 40px;
+            }
+
+            .checklist-section {
+                padding: 35px;
+            }
+
+            .logo {
+                font-size: 28px;
+            }
+
+            .checklist-item {
+                padding: 18px;
+                font-size: 16px;
+            }
+
+            .add-item-input, .add-btn {
+                font-size: 16px;
+                padding: 15px 20px;
+            }
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            .header-content {
+                padding: 5px 0;
+            }
+
+            .main-content {
+                margin: 10px 0;
+            }
+
+            .checklist-section {
+                padding: 10px;
+            }
+
+            .checklist-item {
+                padding: 8px;
+                margin: 5px 0;
+            }
+
+            .menu-overlay {
+                padding-top: 50px;
+            }
+
+            .ai-badge {
+                bottom: 10px;
+                right: 10px;
+                padding: 6px 10px;
+            }
+        }
+
+        .add-custom-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .add-custom-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            outline: none;
+        }
+
+        .add-custom-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .add-custom-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .ai-badge {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-size: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay" id="overlay"></div>
+    
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3 id="themesTitle">Thèmes</h3>
+            <button class="close-btn" onclick="closeSidebar()">×</button>
+        </div>
+        <div class="language-selector">
+            <button class="lang-btn active" onclick="changeLanguage('fr')">FR</button>
+            <button class="lang-btn" onclick="changeLanguage('en')">EN</button>
+            <button class="lang-btn" onclick="changeLanguage('es')">ES</button>
+            <button class="lang-btn" onclick="changeLanguage('de')">DE</button>
+            <button class="lang-btn" onclick="changeLanguage('it')">IT</button>
+        </div>
+        <div class="theme-list">
+            <div class="theme-item active" data-theme="courses" onclick="selectTheme('courses')">
+                <span class="theme-icon">🛒</span>
+                <span id="theme-courses">Courses</span>
+            </div>
+            <div class="theme-item" data-theme="devoirs" onclick="selectTheme('devoirs')">
+                <span class="theme-icon">📚</span>
+                <span id="theme-devoirs">Devoirs</span>
+            </div>
+            <div class="theme-item" data-theme="bureau" onclick="selectTheme('bureau')">
+                <span class="theme-icon">💼</span>
+                <span id="theme-bureau">Bureau</span>
+            </div>
+            <div class="theme-item" data-theme="voyages" onclick="selectTheme('voyages')">
+                <span class="theme-icon">✈️</span>
+                <span id="theme-voyages">Voyages</span>
+            </div>
+            <div class="theme-item" data-theme="sport" onclick="selectTheme('sport')">
+                <span class="theme-icon">🏃‍♂️</span>
+                <span id="theme-sport">Sport</span>
+            </div>
+            <div class="theme-item" data-theme="sante" onclick="selectTheme('sante')">
+                <span class="theme-icon">🏥</span>
+                <span id="theme-sante">Santé</span>
+            </div>
+            <div class="theme-item" data-theme="enfant" onclick="selectTheme('enfant')">
+                <span class="theme-icon">👶</span>
+                <span id="theme-enfant">Enfant</span>
+            </div>
+            <div class="theme-item" data-theme="autres" onclick="selectTheme('autres')">
+                <span class="theme-icon">📝</span>
+                <span id="theme-autres">Autres</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <button class="menu-btn" onclick="openSidebar()">☰</button>
+            <div class="logo">CheckMaster</div>
+        </div>
+
+        <div class="main-content">
+            <div class="search-section">
+                <h2 class="section-title" id="searchTitle">Recherche et Suggestions</h2>
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Rechercher un élément...">
+                    <div class="search-suggestions" id="searchSuggestions"></div>
+                </div>
+                
+                <div class="add-custom-container">
+                    <input type="text" class="add-custom-input" id="customInput" placeholder="Ajouter un élément personnalisé...">
+                    <button class="add-custom-btn" onclick="addCustomItem()" id="addBtn">Ajouter</button>
+                </div>
+                
+                <div class="suggestions-grid" id="suggestionsGrid"></div>
+            </div>
+
+            <div class="checklist-section">
+                <h2 class="section-title" id="checklistTitle">Ma Checklist</h2>
+                <div class="checklist" id="checklist"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ai-badge">
+        <span id="aiBadge">🤖 Propulsé par IA</span>
+    </div>
+
+    <script>
+        let currentLang = 'fr';
+        let currentTheme = 'courses';
+        let checklist = [];
+        let dragStartX = 0;
+        let isDragging = false;
+
+        const translations = {
+            fr: {
+                searchTitle: "Recherche et Suggestions",
+                checklistTitle: "Ma Checklist",
+                themesTitle: "Thèmes",
+                searchPlaceholder: "Rechercher un élément...",
+                customPlaceholder: "Ajouter un élément personnalisé...",
+                addBtn: "Ajouter",
+                aiBadge: "🤖 Propulsé par IA",
+                themes: {
+                    courses: "Courses",
+                    devoirs: "Devoirs", 
+                    bureau: "Bureau",
+                    voyages: "Voyages",
+                    sport: "Sport",
+                    sante: "Santé",
+                    enfant: "Enfant",
+                    autres: "Autres"
+                }
+            },
+            en: {
+                searchTitle: "Search and Suggestions",
+                checklistTitle: "My Checklist",
+                themesTitle: "Themes",
+                searchPlaceholder: "Search for an item...",
+                customPlaceholder: "Add a custom item...",
+                addBtn: "Add",
+                aiBadge: "🤖 AI Powered",
+                themes: {
+                    courses: "Shopping",
+                    devoirs: "Homework",
+                    bureau: "Office",
+                    voyages: "Travel",
+                    sport: "Sports",
+                    sante: "Health",
+                    enfant: "Child",
+                    autres: "Others"
+                }
+            },
+            es: {
+                searchTitle: "Búsqueda y Sugerencias",
+                checklistTitle: "Mi Lista",
+                themesTitle: "Temas",
+                searchPlaceholder: "Buscar un elemento...",
+                customPlaceholder: "Agregar elemento personalizado...",
+                addBtn: "Agregar",
+                aiBadge: "🤖 Impulsado por IA",
+                themes: {
+                    courses: "Compras",
+                    devoirs: "Tareas",
+                    bureau: "Oficina",
+                    voyages: "Viajes",
+                    sport: "Deportes",
+                    sante: "Salud",
+                    enfant: "Niño",
+                    autres: "Otros"
+                }
+            },
+            de: {
+                searchTitle: "Suche und Vorschläge",
+                checklistTitle: "Meine Checkliste",
+                themesTitle: "Themen",
+                searchPlaceholder: "Nach einem Element suchen...",
+                customPlaceholder: "Benutzerdefinierten Artikel hinzufügen...",
+                addBtn: "Hinzufügen",
+                aiBadge: "🤖 KI-gestützt",
+                themes: {
+                    courses: "Einkaufen",
+                    devoirs: "Hausaufgaben",
+                    bureau: "Büro",
+                    voyages: "Reisen",
+                    sport: "Sport",
+                    sante: "Gesundheit",
+                    enfant: "Kind",
+                    autres: "Andere"
+                }
+            },
+            it: {
+                searchTitle: "Ricerca e Suggerimenti",
+                checklistTitle: "La Mia Lista",
+                themesTitle: "Temi",
+                searchPlaceholder: "Cerca un elemento...",
+                customPlaceholder: "Aggiungi elemento personalizzato...",
+                addBtn: "Aggiungi",
+                aiBadge: "🤖 Alimentato da IA",
+                themes: {
+                    courses: "Spesa",
+                    devoirs: "Compiti",
+                    bureau: "Ufficio",
+                    voyages: "Viaggi",
+                    sport: "Sport",
+                    sante: "Salute",
+                    enfant: "Bambino",
+                    autres: "Altri"
+                }
+            }
+        };
+
+        const itemsDatabase = {
+            courses: {
+                fr: [
+                    // Fruits
+                    "Pommes", "Bananes", "Oranges", "Poires", "Fraises", "Raisins", "Kiwis", "Mangues", "Ananas", "Pêches",
+                    "Cerises", "Abricots", "Prunes", "Melons", "Pastèques", "Citrons", "Limes", "Pamplemousses", "Framboises", "Myrtilles",
+                    // Légumes
+                    "Carottes", "Tomates", "Oignons", "Pommes de terre", "Courgettes", "Brocolis", "Épinards", "Laitue", "Concombres", "Poivrons",
+                    "Aubergines", "Radis", "Navets", "Betteraves", "Choux", "Choux-fleurs", "Haricots verts", "Petits pois", "Maïs", "Champignons",
+                    // Viandes
+                    "Poulet", "Bœuf", "Porc", "Agneau", "Veau", "Saucisses", "Jambon", "Bacon", "Steaks", "Côtelettes",
+                    // Poissons
+                    "Saumon", "Thon", "Cabillaud", "Truite", "Sardines", "Crevettes", "Moules", "Huîtres", "Crabe", "Homard",
+                    // Produits laitiers
+                    "Lait", "Fromage", "Yaourt", "Beurre", "Crème", "Œufs", "Fromage blanc", "Crème fraîche", "Mozzarella", "Camembert",
+                    // Féculents
+                    "Pain", "Pâtes", "Riz", "Céréales", "Farine", "Quinoa", "Avoine", "Orge", "Semoule", "Couscous",
+                    // Gourmandises
+                    "Chocolat", "Bonbons", "Biscuits", "Gâteaux", "Glaces", "Chips", "Cacahuètes", "Noix", "Amandes", "Noisettes"
+                ],
+                en: [
+                    // Fruits
+                    "Apples", "Bananas", "Oranges", "Pears", "Strawberries", "Grapes", "Kiwis", "Mangoes", "Pineapples", "Peaches",
+                    "Cherries", "Apricots", "Plums", "Melons", "Watermelons", "Lemons", "Limes", "Grapefruits", "Raspberries", "Blueberries",
+                    // Vegetables
+                    "Carrots", "Tomatoes", "Onions", "Potatoes", "Zucchini", "Broccoli", "Spinach", "Lettuce", "Cucumbers", "Peppers",
+                    "Eggplants", "Radishes", "Turnips", "Beets", "Cabbage", "Cauliflower", "Green beans", "Peas", "Corn", "Mushrooms",
+                    // Meats
+                    "Chicken", "Beef", "Pork", "Lamb", "Veal", "Sausages", "Ham", "Bacon", "Steaks", "Chops",
+                    // Fish
+                    "Salmon", "Tuna", "Cod", "Trout", "Sardines", "Shrimp", "Mussels", "Oysters", "Crab", "Lobster",
+                    // Dairy
+                    "Milk", "Cheese", "Yogurt", "Butter", "Cream", "Eggs", "Cottage cheese", "Sour cream", "Mozzarella", "Cheddar",
+                    // Grains
+                    "Bread", "Pasta", "Rice", "Cereals", "Flour", "Quinoa", "Oats", "Barley", "Semolina", "Couscous",
+                    // Snacks
+                    "Chocolate", "Candy", "Cookies", "Cakes", "Ice cream", "Chips", "Peanuts", "Nuts", "Almonds", "Hazelnuts"
+                ],
+                es: [
+                    // Frutas
+                    "Manzanas", "Plátanos", "Naranjas", "Peras", "Fresas", "Uvas", "Kiwis", "Mangos", "Piñas", "Melocotones",
+                    "Cerezas", "Albaricoques", "Ciruelas", "Melones", "Sandías", "Limones", "Limas", "Pomelos", "Frambuesas", "Arándanos",
+                    // Verduras
+                    "Zanahorias", "Tomates", "Cebollas", "Patatas", "Calabacines", "Brócoli", "Espinacas", "Lechuga", "Pepinos", "Pimientos",
+                    "Berenjenas", "Rábanos", "Nabos", "Remolachas", "Repollo", "Coliflor", "Judías verdes", "Guisantes", "Maíz", "Champiñones",
+                    // Carnes
+                    "Pollo", "Ternera", "Cerdo", "Cordero", "Ternera", "Salchichas", "Jamón", "Tocino", "Bistec", "Chuletas",
+                    // Pescado
+                    "Salmón", "Atún", "Bacalao", "Trucha", "Sardinas", "Camarones", "Mejillones", "Ostras", "Cangrejo", "Langosta",
+                    // Lácteos
+                    "Leche", "Queso", "Yogur", "Mantequilla", "Crema", "Huevos", "Requesón", "Crema agria", "Mozzarella", "Cheddar",
+                    // Granos
+                    "Pan", "Pasta", "Arroz", "Cereales", "Harina", "Quinoa", "Avena", "Cebada", "Sémola", "Cuscús",
+                    // Dulces
+                    "Chocolate", "Caramelos", "Galletas", "Pasteles", "Helado", "Patatas fritas", "Cacahuetes", "Nueces", "Almendras", "Avellanas"
+                ],
+                de: [
+                    // Früchte
+                    "Äpfel", "Bananen", "Orangen", "Birnen", "Erdbeeren", "Trauben", "Kiwis", "Mangos", "Ananas", "Pfirsiche",
+                    "Kirschen", "Aprikosen", "Pflaumen", "Melonen", "Wassermelonen", "Zitronen", "Limetten", "Grapefruits", "Himbeeren", "Heidelbeeren",
+                    // Gemüse
+                    "Karotten", "Tomaten", "Zwiebeln", "Kartoffeln", "Zucchini", "Brokkoli", "Spinat", "Salat", "Gurken", "Paprika",
+                    "Auberginen", "Radieschen", "Rüben", "Rote Bete", "Kohl", "Blumenkohl", "Grüne Bohnen", "Erbsen", "Mais", "Pilze",
+                    // Fleisch
+                    "Huhn", "Rindfleisch", "Schwein", "Lamm", "Kalb", "Würste", "Schinken", "Speck", "Steaks", "Koteletts",
+                    // Fisch
+                    "Lachs", "Thunfisch", "Kabeljau", "Forelle", "Sardinen", "Garnelen", "Muscheln", "Austern", "Krabbe", "Hummer",
+                    // Milchprodukte
+                    "Milch", "Käse", "Joghurt", "Butter", "Sahne", "Eier", "Quark", "Saure Sahne", "Mozzarella", "Cheddar",
+                    // Getreide
+                    "Brot", "Nudeln", "Reis", "Getreide", "Mehl", "Quinoa", "Hafer", "Gerste", "Grieß", "Couscous",
+                    // Süßigkeiten
+                    "Schokolade", "Süßigkeiten", "Kekse", "Kuchen", "Eis", "Chips", "Erdnüsse", "Nüsse", "Mandeln", "Haselnüsse"
+                ],
+                it: [
+                    // Frutta
+                    "Mele", "Banane", "Arance", "Pere", "Fragole", "Uva", "Kiwi", "Mango", "Ananas", "Pesche",
+                    "Ciliegie", "Albicocche", "Prugne", "Meloni", "Angurie", "Limoni", "Lime", "Pompelmi", "Lamponi", "Mirtilli",
+                    // Verdure
+                    "Carote", "Pomodori", "Cipolle", "Patate", "Zucchine", "Broccoli", "Spinaci", "Lattuga", "Cetrioli", "Peperoni",
+                    "Melanzane", "Ravanelli", "Rape", "Barbabietole", "Cavolo", "Cavolfiore", "Fagiolini", "Piselli", "Mais", "Funghi",
+                    // Carne
+                    "Pollo", "Manzo", "Maiale", "Agnello", "Vitello", "Salsicce", "Prosciutto", "Pancetta", "Bistecche", "Braciole",
+                    // Pesce
+                    "Salmone", "Tonno", "Merluzzo", "Trota", "Sardine", "Gamberetti", "Cozze", "Ostriche", "Granchio", "Aragosta",
+                    // Latticini
+                    "Latte", "Formaggio", "Yogurt", "Burro", "Panna", "Uova", "Ricotta", "Panna acida", "Mozzarella", "Parmigiano",
+                    // Cereali
+                    "Pane", "Pasta", "Riso", "Cereali", "Farina", "Quinoa", "Avena", "Orzo", "Semolino", "Couscous",
+                    // Dolci
+                    "Cioccolato", "Caramelle", "Biscotti", "Torte", "Gelato", "Patatine", "Arachidi", "Noci", "Mandorle", "Nocciole"
+                ]
+            },
+            devoirs: {
+                fr: ["Mathématiques", "Français", "Histoire", "Géographie", "Sciences", "Anglais", "Physique-Chimie", "SVT", "Technologie", "Arts plastiques", "Musique", "EPS", "Philosophie", "Économie", "Allemand", "Espagnol", "Latin", "Grec", "Informatique", "Littérature"],
+                en: ["Mathematics", "English", "History", "Geography", "Science", "French", "Physics", "Chemistry", "Biology", "Technology", "Art", "Music", "PE", "Philosophy", "Economics", "German", "Spanish", "Latin", "Greek", "Computer Science"],
+                es: ["Matemáticas", "Español", "Historia", "Geografía", "Ciencias", "Inglés", "Física", "Química", "Biología", "Tecnología", "Arte", "Música", "Educación Física", "Filosofía", "Economía", "Alemán", "Francés", "Latín", "Griego", "Informática"],
+                de: ["Mathematik", "Deutsch", "Geschichte", "Geographie", "Naturwissenschaften", "Englisch", "Physik", "Chemie", "Biologie", "Technologie", "Kunst", "Musik", "Sport", "Philosophie", "Wirtschaft", "Französisch", "Spanisch", "Latein", "Griechisch", "Informatik"],
+                it: ["Matematica", "Italiano", "Storia", "Geografia", "Scienze", "Inglese", "Fisica", "Chimica", "Biologia", "Tecnologia", "Arte", "Musica", "Educazione fisica", "Filosofia", "Economia", "Tedesco", "Francese", "Latino", "Greco", "Informatica"]
+            },
+            bureau: {
+                fr: ["Réunion équipe", "Rapport mensuel", "Présentation client", "Formation", "Entretien annuel", "Budget prévisionnel", "Planification projet", "Suivi des ventes", "Analyse des données", "Mise à jour site web", "Répondre aux emails", "Appels téléphoniques", "Commande fournitures", "Nettoyage bureau", "Sauvegarde données", "Révision contrats", "Préparation agenda", "Classement documents", "Mise à jour CRM", "Coordination équipes"],
+                en: ["Team meeting", "Monthly report", "Client presentation", "Training", "Annual review", "Budget forecast", "Project planning", "Sales tracking", "Data analysis", "Website update", "Reply to emails", "Phone calls", "Order supplies", "Office cleaning", "Data backup", "Contract review", "Schedule preparation", "Document filing", "CRM update", "Team coordination"],
+                es: ["Reunión de equipo", "Informe mensual", "Presentación cliente", "Formación", "Revisión anual", "Presupuesto", "Planificación proyecto", "Seguimiento ventas", "Análisis datos", "Actualización web", "Responder emails", "Llamadas telefónicas", "Pedido suministros", "Limpieza oficina", "Copia seguridad", "Revisión contratos", "Preparación agenda", "Archivo documentos", "Actualización CRM", "Coordinación equipos"],
+                de: ["Team-Meeting", "Monatsbericht", "Kundenpräsentation", "Schulung", "Jahresgespräch", "Budgetplanung", "Projektplanung", "Verkaufsverfolgung", "Datenanalyse", "Website-Update", "E-Mails beantworten", "Telefonanrufe", "Büromaterial bestellen", "Büro reinigen", "Datensicherung", "Vertragsüberprüfung", "Terminplanung", "Dokumente ablegen", "CRM-Update", "Teamkoordination"],
+                it: ["Riunione team", "Rapporto mensile", "Presentazione cliente", "Formazione", "Revisione annuale", "Budget previsionale", "Pianificazione progetto", "Monitoraggio vendite", "Analisi dati", "Aggiornamento sito", "Rispondere email", "Chiamate telefoniche", "Ordinare forniture", "Pulizia ufficio", "Backup dati", "Revisione contratti", "Preparazione agenda", "Archiviazione documenti", "Aggiornamento CRM", "Coordinazione team"]
+            },
+            voyages: {
+                fr: ["Passeport", "Billets d'avion", "Réservation hôtel", "Assurance voyage", "Visa", "Vaccinations", "Médicaments", "Adaptateur électrique", "Valises", "Appareil photo", "Cartes de crédit", "Argent liquide", "Guide de voyage", "Vêtements chauds", "Maillot de bain", "Crème solaire", "Lunettes de soleil", "Chargeur téléphone", "Documents voyage", "Liste contacts urgence", "Trousse de toilette", "Sous-vêtements", "Chaussures confort", "Sac à dos", "Carnet voyage"],
+                en: ["Passport", "Flight tickets", "Hotel booking", "Travel insurance", "Visa", "Vaccinations", "Medications", "Power adapter", "Luggage", "Camera", "Credit cards", "Cash", "Travel guide", "Warm clothes", "Swimsuit", "Sunscreen", "Sunglasses", "Phone charger", "Travel documents", "Emergency contacts", "Toiletries", "Underwear", "Comfortable shoes", "Backpack", "Travel journal"],
+                es: ["Pasaporte", "Billetes de avión", "Reserva hotel", "Seguro viaje", "Visa", "Vacunas", "Medicamentos", "Adaptador eléctrico", "Maletas", "Cámara", "Tarjetas crédito", "Dinero efectivo", "Guía viaje", "Ropa abrigada", "Traje de baño", "Protector solar", "Gafas de sol", "Cargador teléfono", "Documentos viaje", "Contactos emergencia", "Artículos aseo", "Ropa interior", "Zapatos cómodos", "Mochila", "Diario viaje"],
+                de: ["Reisepass", "Flugtickets", "Hotelbuchung", "Reiseversicherung", "Visa", "Impfungen", "Medikamente", "Stromadapter", "Gepäck", "Kamera", "Kreditkarten", "Bargeld", "Reiseführer", "Warme Kleidung", "Badeanzug", "Sonnencreme", "Sonnenbrille", "Handy-Ladegerät", "Reisedokumente", "Notfallkontakte", "Toilettenartikel", "Unterwäsche", "Bequeme Schuhe", "Rucksack", "Reisetagebuch"],
+                it: ["Passaporto", "Biglietti aereo", "Prenotazione hotel", "Assicurazione viaggio", "Visto", "Vaccinazioni", "Medicinali", "Adattatore elettrico", "Valigie", "Macchina fotografica", "Carte di credito", "Contanti", "Guida viaggio", "Vestiti caldi", "Costume da bagno", "Crema solare", "Occhiali da sole", "Caricatore telefono", "Documenti viaggio", "Contatti emergenza", "Articoli toilette", "Biancheria intima", "Scarpe comode", "Zaino", "Diario di viaggio"]
+            },
+            sport: {
+                fr: ["Échauffement", "Cardio 30min", "Musculation", "Étirements", "Course à pied", "Natation", "Vélo", "Yoga", "Pilates", "Abdominaux", "Pompes", "Squats", "Tractions", "Burpees", "Planche", "Saut à la corde", "Haltères", "Tapis de sport", "Bouteille d'eau", "Serviette", "Chaussures sport", "Tenue sport", "Chronomètre", "Carnet entraînement", "Protéines"],
+                en: ["Warm-up", "30min Cardio", "Weight training", "Stretching", "Running", "Swimming", "Cycling", "Yoga", "Pilates", "Abs workout", "Push-ups", "Squats", "Pull-ups", "Burpees", "Plank", "Jump rope", "Dumbbells", "Exercise mat", "Water bottle", "Towel", "Sports shoes", "Workout clothes", "Stopwatch", "Training log", "Protein shake"],
+                es: ["Calentamiento", "30min Cardio", "Musculación", "Estiramientos", "Correr", "Natación", "Ciclismo", "Yoga", "Pilates", "Abdominales", "Flexiones", "Sentadillas", "Dominadas", "Burpees", "Plancha", "Saltar cuerda", "Mancuernas", "Colchoneta", "Botella agua", "Toalla", "Zapatillas deporte", "Ropa deportiva", "Cronómetro", "Registro entrenamiento", "Batido proteínas"],
+                de: ["Aufwärmen", "30min Cardio", "Krafttraining", "Dehnen", "Laufen", "Schwimmen", "Radfahren", "Yoga", "Pilates", "Bauchmuskel-Training", "Liegestütze", "Kniebeugen", "Klimmzüge", "Burpees", "Planke", "Seilspringen", "Hanteln", "Trainingsmatte", "Wasserflasche", "Handtuch", "Sportschuhe", "Sportkleidung", "Stoppuhr", "Trainingsprotokoll", "Protein-Shake"],
+                it: ["Riscaldamento", "30min Cardio", "Allenamento pesi", "Stretching", "Corsa", "Nuoto", "Ciclismo", "Yoga", "Pilates", "Addominali", "Flessioni", "Squat", "Trazioni", "Burpees", "Plank", "Salto corda", "Manubri", "Tappetino", "Borraccia", "Asciugamano", "Scarpe sportive", "Abbigliamento sportivo", "Cronometro", "Diario allenamento", "Shake proteici"]
+            },
+            sante: {
+                fr: ["Rendez-vous médecin", "Prise de sang", "Dentiste", "Ophtalmologue", "Vaccins", "Médicaments", "Vitamines", "Exercice quotidien", "8 verres d'eau", "Sommeil 8h", "Méditation", "Poids corporel", "Tension artérielle", "Glycémie", "Crème hydratante", "Protection solaire", "Fruits et légumes", "Arrêt tabac", "Réduction stress", "Bilan de santé", "Cardiologue", "Dermatologue", "Kinésithérapeute", "Psychologue", "Pharmacie"],
+                en: ["Doctor appointment", "Blood test", "Dentist", "Eye doctor", "Vaccines", "Medications", "Vitamins", "Daily exercise", "8 glasses water", "8h sleep", "Meditation", "Body weight", "Blood pressure", "Blood sugar", "Moisturizer", "Sun protection", "Fruits vegetables", "Quit smoking", "Stress reduction", "Health checkup", "Cardiologist", "Dermatologist", "Physiotherapist", "Psychologist", "Pharmacy"],
+                es: ["Cita médico", "Análisis sangre", "Dentista", "Oftalmólogo", "Vacunas", "Medicamentos", "Vitaminas", "Ejercicio diario", "8 vasos agua", "8h sueño", "Meditación", "Peso corporal", "Presión arterial", "Glucemia", "Crema hidratante", "Protección solar", "Frutas verduras", "Dejar fumar", "Reducir estrés", "Chequeo médico", "Cardiólogo", "Dermatólogo", "Fisioterapeuta", "Psicólogo", "Farmacia"],
+                de: ["Arzttermin", "Bluttest", "Zahnarzt", "Augenarzt", "Impfungen", "Medikamente", "Vitamine", "Tägliche Bewegung", "8 Gläser Wasser", "8h Schlaf", "Meditation", "Körpergewicht", "Blutdruck", "Blutzucker", "Feuchtigkeitscreme", "Sonnenschutz", "Obst Gemüse", "Rauchen aufhören", "Stress reduzieren", "Gesundheitscheck", "Kardiologe", "Dermatologe", "Physiotherapeut", "Psychologe", "Apotheke"],
+                it: ["Appuntamento medico", "Esami sangue", "Dentista", "Oculista", "Vaccini", "Medicinali", "Vitamine", "Esercizio quotidiano", "8 bicchieri acqua", "8h sonno", "Meditazione", "Peso corporeo", "Pressione sanguigna", "Glicemia", "Crema idratante", "Protezione solare", "Frutta verdura", "Smettere fumare", "Ridurre stress", "Controllo medico", "Cardiologo", "Dermatologo", "Fisioterapista", "Psicologo", "Farmacia"]
+            },
+            enfant: {
+                fr: ["Biberon", "Couches", "Vêtements bébé", "Jouets", "Livre histoire", "Doudou", "Tétine", "Siège auto", "Poussette", "Chaise haute", "Bain bébé", "Crème change", "Lait infantile", "Petits pots", "Bavoirs", "Bodies", "Pyjamas", "Chaussettes", "Bonnets", "Lingettes", "Thermomètre", "Paracétamol enfant", "Carnet santé", "Rendez-vous pédiatre", "École maternelle"],
+                en: ["Baby bottle", "Diapers", "Baby clothes", "Toys", "Story book", "Comfort toy", "Pacifier", "Car seat", "Stroller", "High chair", "Baby bath", "Diaper cream", "Baby formula", "Baby food", "Bibs", "Onesies", "Pajamas", "Socks", "Hats", "Baby wipes", "Thermometer", "Children's medicine", "Health record", "Pediatrician appointment", "Kindergarten"],
+                es: ["Biberón", "Pañales", "Ropa bebé", "Juguetes", "Libro cuentos", "Peluche", "Chupete", "Silla coche", "Cochecito", "Trona", "Bañera bebé", "Crema pañal", "Leche fórmula", "Papillas", "Baberos", "Bodies", "Pijamas", "Calcetines", "Gorros", "Toallitas", "Termómetro", "Medicina niños", "Cartilla salud", "Cita pediatra", "Guardería"],
+                de: ["Babyflasche", "Windeln", "Babykleidung", "Spielzeug", "Bilderbuch", "Kuscheltier", "Schnuller", "Autositz", "Kinderwagen", "Hochstuhl", "Babybadewanne", "Windelcreme", "Babynahrung", "Babybrei", "Lätzchen", "Bodys", "Schlafanzug", "Socken", "Mützen", "Feuchttücher", "Thermometer", "Kindermedizin", "Gesundheitsheft", "Kinderarzttermin", "Kindergarten"],
+                it: ["Biberon", "Pannolini", "Vestiti bebè", "Giocattoli", "Libro favole", "Peluche", "Ciuccio", "Seggiolino auto", "Passeggino", "Seggiolone", "Bagnetto", "Crema cambio", "Latte artificiale", "Omogeneizzati", "Bavaglini", "Body", "Pigiami", "Calzini", "Cappellini", "Salviettine", "Termometro", "Medicina bambini", "Libretto sanitario", "Visita pediatra", "Asilo nido"]
+            },
+            autres: {
+                fr: ["Ménage maison", "Lessive", "Repassage", "Aspirateur", "Nettoyage vitres", "Sortir poubelles", "Arroser plantes", "Payer factures", "Banque", "Assurance", "Impôts", "Coiffeur", "Pressing", "Réparation voiture", "Plombier", "Électricien", "Jardinage", "Bricolage", "Déco maison", "Anniversaire ami", "Cadeau", "Invitation dîner", "Réservation restaurant", "Spectacle", "Cinéma"],
+                en: ["House cleaning", "Laundry", "Ironing", "Vacuum", "Clean windows", "Take out trash", "Water plants", "Pay bills", "Bank", "Insurance", "Taxes", "Haircut", "Dry cleaning", "Car repair", "Plumber", "Electrician", "Gardening", "DIY projects", "Home decor", "Friend's birthday", "Gift", "Dinner invitation", "Restaurant booking", "Show", "Movies"],
+                es: ["Limpieza casa", "Lavandería", "Planchar", "Aspiradora", "Limpiar ventanas", "Sacar basura", "Regar plantas", "Pagar facturas", "Banco", "Seguros", "Impuestos", "Peluquería", "Tintorería", "Reparar coche", "Fontanero", "Electricista", "Jardinería", "Bricolaje", "Decoración", "Cumpleaños amigo", "Regalo", "Invitación cena", "Reserva restaurante", "Espectáculo", "Cine"],
+                de: ["Hausputz", "Wäsche", "Bügeln", "Staubsaugen", "Fenster putzen", "Müll rausbringen", "Pflanzen gießen", "Rechnungen zahlen", "Bank", "Versicherung", "Steuern", "Friseur", "Reinigung", "Auto reparieren", "Klempner", "Elektriker", "Gartenarbeit", "Heimwerken", "Wohndeko", "Freund Geburtstag", "Geschenk", "Dinner Einladung", "Restaurant Reservierung", "Show", "Kino"],
+                it: ["Pulizie casa", "Bucato", "Stirare", "Aspirapolvere", "Pulire finestre", "Buttare spazzatura", "Innaffiare piante", "Pagare bollette", "Banca", "Assicurazione", "Tasse", "Parrucchiere", "Lavanderia", "Riparazione auto", "Idraulico", "Elettricista", "Giardinaggio", "Fai da te", "Arredamento", "Compleanno amico", "Regalo", "Invito cena", "Prenotazione ristorante", "Spettacolo", "Cinema"]
+            }
+        };
+
+        function openSidebar() {
+            document.getElementById('sidebar').classList.add('open');
+            document.getElementById('overlay').classList.add('show');
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('show');
+        }
+
+        function selectTheme(theme) {
+            currentTheme = theme;
+            document.querySelectorAll('.theme-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-theme="${theme}"]`).classList.add('active');
+            updateSuggestions();
+            closeSidebar();
+        }
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            updateUI();
+            updateSuggestions();
+        }
+
+        function updateUI() {
+            const t = translations[currentLang];
+            document.getElementById('searchTitle').textContent = t.searchTitle;
+            document.getElementById('checklistTitle').textContent = t.checklistTitle;
+            document.getElementById('themesTitle').textContent = t.themesTitle;
+            document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+            document.getElementById('customInput').placeholder = t.customPlaceholder;
+            document.getElementById('addBtn').textContent = t.addBtn;
+            document.getElementById('aiBadge').textContent = t.aiBadge;
+            
+            Object.keys(t.themes).forEach(theme => {
+                const element = document.getElementById(`theme-${theme}`);
+                if (element) {
+                    element.textContent = t.themes[theme];
+                }
+            });
+        }
+
+        function updateSuggestions() {
+            const grid = document.getElementById('suggestionsGrid');
+            const items = itemsDatabase[currentTheme][currentLang] || [];
+            
+            // Prendre 5 suggestions aléatoirement
+            const suggestions = items.sort(() => 0.5 - Math.random()).slice(0, 5);
+            
+            grid.innerHTML = suggestions.map(item => 
+                `<div class="suggestion-card" onclick="addToChecklist('${item}')">${item}</div>`
+            ).join('');
+        }
+
+        function addToChecklist(item) {
+            if (!checklist.find(checkItem => checkItem.text === item)) {
+                checklist.push({
+                    id: Date.now(),
+                    text: item,
+                    completed: false
+                });
+                updateChecklistDisplay();
+            }
+        }
+
+        function addCustomItem() {
+            const input = document.getElementById('customInput');
+            const text = input.value.trim();
+            if (text && !checklist.find(item => item.text === text)) {
+                addToChecklist(text);
+                input.value = '';
+            }
+        }
+
+        function updateChecklistDisplay() {
+            const container = document.getElementById('checklist');
+            container.innerHTML = checklist.map(item => `
+                <div class="checklist-item ${item.completed ? 'completed' : ''}" 
+                     data-id="${item.id}"
+                     ontouchstart="handleTouchStart(event)"
+                     ontouchmove="handleTouchMove(event)"
+                     ontouchend="handleTouchEnd(event)">
+                    <input type="checkbox" ${item.completed ? 'checked' : ''} 
+                           onchange="toggleItem(${item.id})">
+                    <span>${item.text}</span>
+                    <button class="delete-btn" onclick="deleteItem(${item.id})">×</button>
+                </div>
+            `).join('');
+        }
+
+        function toggleItem(id) {
+            const item = checklist.find(item => item.id === id);
+            if (item) {
+                item.completed = !item.completed;
+                updateChecklistDisplay();
+            }
+        }
+
+        function deleteItem(id) {
+            checklist = checklist.filter(item => item.id !== id);
+            updateChecklistDisplay();
+        }
+
+        // Gestion du glisser-déposer sur mobile
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let currentElement = null;
+
+        function handleTouchStart(e) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            currentElement = e.currentTarget;
+        }
+
+        function handleTouchMove(e) {
+            if (!currentElement) return;
+            
+            const touchX = e.touches[0].clientX;
+            const touchY = e.touches[0].clientY;
+            const deltaX = touchX - touchStartX;
+            const deltaY = touchY - touchStartY;
+            
+            // Si le mouvement est principalement horizontal vers la gauche
+            if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX < -50) {
+                currentElement.style.transform = `translateX(${deltaX}px)`;
+                currentElement.style.opacity = Math.max(0.3, 1 + deltaX / 200);
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!currentElement) return;
+            
+            const deltaX = e.changedTouches[0].clientX - touchStartX;
+            
+            if (deltaX < -100) {
+                // Supprimer l'élément
+                const id = parseInt(currentElement.dataset.id);
+                deleteItem(id);
+            } else {
+                // Remettre en place
+                currentElement.style.transform = 'translateX(0)';
+                currentElement.style.opacity = '1';
+            }
+            
+            currentElement = null;
+        }
+
+        // Barre de recherche intelligente
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase();
+            const suggestions = document.getElementById('searchSuggestions');
+            
+            if (query.length === 0) {
+                suggestions.style.display = 'none';
+                return;
+            }
+            
+            const allItems = itemsDatabase[currentTheme][currentLang] || [];
+            const filtered = allItems.filter(item => 
+                item.toLowerCase().includes(query)
+            ).slice(0, 8);
+            
+            if (filtered.length > 0) {
+                suggestions.innerHTML = filtered.map(item => 
+                    `<div class="suggestion-item" onclick="selectSuggestion('${item}')">${item}</div>`
+                ).join('');
+                suggestions.style.display = 'block';
+            } else {
+                suggestions.style.display = 'none';
+            }
+        });
+
+        function selectSuggestion(item) {
+            addToChecklist(item);
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchSuggestions').style.display = 'none'; 
+        }
+
+        // Fermer les suggestions quand on clique ailleurs
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-container')) {
+                document.getElementById('searchSuggestions').style.display = 'none';
+            }
+        });
+
+        // Fermer la sidebar quand on clique sur l'overlay
+        document.getElementById('overlay').addEventListener('click', closeSidebar);
+
+        // Permettre d'ajouter avec Entrée
+        document.getElementById('customInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addCustomItem();
+            }
+        });
+
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const query = e.target.value.trim();
+                if (query) {
+                    addToChecklist(query);
+                    e.target.value = '';
+                    document.getElementById('searchSuggestions').style.display = 'none';
+                }
+            }
+        });
+
+        // Initialisation
+        updateUI();
+        updateSuggestions();
+    </script>
+</body>
+</html>
